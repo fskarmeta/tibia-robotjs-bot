@@ -1,9 +1,34 @@
+// IMPORTACIONES - NO CAMBIAR
 let robot = require("robotjs");
+const fs = require("fs");
+const { clear } = require("console");
+const SCREEN_SIZE = robot.getScreenSize();
+//
+///////////////////////////////     CONFIGURACION  ////////////////////////////////////////////
 
 // ¿ TENDRAS EL JUEGO ABIERTO O MINIMIZADO HACIENDO OTRA COSA ?
-const GAME_OPEN = false;
+const GAME_OPEN = true;
 
-///////////////////// TIEMPOS //////////////////////////////////////////
+// ¿ESTARAS AUSENTE Y QUIERES QUE TE LLEGUE UN MENSAJE SI TE HABLA UN ADMIN? (solo con game_open = true!)
+const AWAY = true;
+
+// NICKNAMES O FRASES QUE QUIERES QUE PAREN TU SCRIPT Y MANDEN MENSAJE
+const STRINGS = ["GM"];
+
+// CONFIG TU CUENTA DE TWILIO
+const accountSid = "";
+const authToken = "";
+const client = require("twilio")(accountSid, authToken); // NO CAMBIAR
+
+// PATH A TU ARCHIVO Default.txt en tu computador
+const DEFAULT_PATH = "../Dura Client14/Default.txt";
+
+// INFO SMS
+const TEXT = "ADMIN PRESENTE TIBIA!!";
+const YOUR_TWILIO_PHONE = "+12059286871";
+const YOUR_CELPHONE = "+56999199479";
+
+///////////////////////////////////  TIEMPOS //////////////////////////////////////////
 
 // PARA GAME_OPEN = False
 // TIEMPO CERRAR VENTANA DESPUES DE OPERACIÓN
@@ -32,18 +57,13 @@ const MIN_MINS_FOOD = 9; // RECOMENDADO 9
 const MAX_AMOUNT_CLICKS = 5; // RECOMENDADO 5
 const MIN_AMOUNT_CLICKS = 9; // RECOMENDADO 9
 
-/////////////////////////////////////////////////////////
+//////////////////////////////////////// POSICIONES PANTALLA //////////////////////////////////////////////////
 
-///////////////////////// POSICIONES PANTALLA ////////////////////////
-
-/////////////////////////////////////////////////////////
-const SCREEN_SIZE = robot.getScreenSize();
-
-// coordenadas Icono Tibia abajo
+// COORDENADAS ICONO DE TIBIA EN BARRA DE APLICACIONES
 const TAB_WIDTH = SCREEN_SIZE.width / 2 - 290;
 const TAB_HEIGHT = SCREEN_SIZE.height - 20;
 
-// coordenadas minimzar ventana
+// COORDINADAS MINIMZAR VENTANA DE TIBIA
 const CLOSE_WIDTH = SCREEN_SIZE.width - 120;
 const CLOSE_HEIGHT = 10;
 
@@ -51,7 +71,7 @@ const CLOSE_HEIGHT = 10;
 // const FOOD_WIDTH = SCREEN_SIZE.width / 2 + 690;
 // const FOOD_HEIGHT = SCREEN_SIZE.height / 2 - 150;
 
-//POSICION COMIDA PARA CREAR CLICK EN ESPACIO RANDOM DEL CUADRANTE
+//POSICION COMIDA PARA HACER CLICK RANDOM DENTRO DEL CUADRADO DE LA COMIDA
 // ARRIBA IZQUIERDA
 const X1_FOOD = SCREEN_SIZE.width / 2 + 675;
 const Y1_FOOD = SCREEN_SIZE.height / 2 - 162;
@@ -60,7 +80,19 @@ const Y1_FOOD = SCREEN_SIZE.height / 2 - 162;
 const X2_FOOD = SCREEN_SIZE.width / 2 + 706;
 const Y2_FOOD = SCREEN_SIZE.height / 2 - 135;
 
-/// --------------- NO CAMBIAR DE ACA HACIA ABAJO -------------------------------////
+// PESTAÑA CHAT DEFAULT
+const CHAT_WIDTH = SCREEN_SIZE.width / 2 - 700;
+const CHAT_HEIGHT = SCREEN_SIZE.height / 2 + 210;
+
+// PESTAÑA SAFE CHAT DEFAULT
+const SAVE_CHAT_WIDTH = SCREEN_SIZE.width / 2 - 690;
+const SAVE_CHAT_HEIGHT = SCREEN_SIZE.height / 2 + 220;
+
+// MOUSE SOBRE EL CHAT DEL JUEGO PARA ESCRIBIR
+const TEXT_CHAT_WIDTH = SCREEN_SIZE.width / 2 - 100;
+const TEXT_CHAT_HEIGHT = SCREEN_SIZE.height / 2 + 372;
+
+////////////////// --------------- NO CAMBIAR DE ACA HACIA ABAJO -------------------------------////////////////////////
 
 //////////////// MINUTOS Y SEGUNDOS A MILISEGUNDOS  ///////////////
 // Tiempo Clicks entre comida
@@ -90,7 +122,7 @@ const MILI_MIN_SECS_EXECUTE_OP = secondsToMiliSeconds(MIN_SECS_EXECUTE_OP);
 /////////////////// FUNCIONES /////////////////////////////
 
 // TRANSFORMADORES DE TIEMPO
-////////////////////////////////////////
+
 const formatDisplayTime = (time) => {
   let mins = Math.floor(time / 60);
   let secs = time % 60;
@@ -106,7 +138,6 @@ function secondsToMiliSeconds(seconds) {
 function minutesToMiliSeconds(minutes) {
   return minutes * 60 * 1000;
 }
-//////////////////////////////////////////////////
 
 // CLICKS COMIDA
 const randomClicks = (maxClicks, minClicks, maxTimeClick, minTimeClick) => {
@@ -164,14 +195,26 @@ const closeWindow = (segundosCierreVentan) => {
   }
 };
 
+/// SAY "HI" IN CHAT
+const sayHi = () => {
+  robot.moveMouse(TEXT_CHAT_WIDTH, TEXT_CHAT_HEIGHT);
+  robot.mouseClick();
+  robot.keyTap("h");
+  robot.keyTap("i");
+  robot.keyTap("enter");
+};
+
 ////////////////// SCRIPT /////////////////////////
 
+//FLAG
+let OP_IN_EXECUTION = false;
+
+///// LOG
 console.log(
   `!--- Script iniciado a las ${new Date().toLocaleTimeString()} en modalidad "GAME OPEN: ${GAME_OPEN}" ----!`
 );
-///// LOG
 let milisegundos = 0;
-setInterval(() => {
+const LOG = setInterval(() => {
   console.log(
     `Son las ${new Date().toLocaleTimeString()} y han transcurido ${formatDisplayTime(
       milisegundos
@@ -179,10 +222,10 @@ setInterval(() => {
   );
   milisegundos++;
 }, 1000);
-///////
 
-// Comer
-setInterval(() => {
+//// COMER
+const EATING = setInterval(() => {
+  OP_IN_EXECUTION = true;
   openWindow();
   setTimeout(() => {
     randomClicks(
@@ -193,14 +236,76 @@ setInterval(() => {
     );
   }, Math.floor(Math.random() * (MILI_MAX_SECS_EXECUTE_OP - MILI_MIN_SECS_EXECUTE_OP) + MILI_MIN_SECS_EXECUTE_OP));
   closeWindow(MILI_CLOSE_WINDOW_SECS);
+  OP_IN_EXECUTION = false;
 }, Math.floor(Math.random() * (MILI_MAX_MINS_FOOD - MILI_MIN_MINS_FOOD + 10000) + MILI_MIN_MINS_FOOD));
 
-// Apretar Tecla
-
-setInterval(() => {
+//// APRETAR TECLA
+const KEYPRESS = setInterval(() => {
+  OP_IN_EXECUTION = true;
   openWindow();
   setTimeout(() => {
     pressKey(KEY);
   }, Math.floor(Math.random() * (MILI_MAX_SECS_EXECUTE_OP - MILI_MIN_SECS_EXECUTE_OP + 1000) + MILI_MIN_SECS_EXECUTE_OP));
   closeWindow(MILI_CLOSE_WINDOW_SECS);
+  OP_IN_EXECUTION = false;
 }, Math.floor(Math.random() * (MILI_MAX_MINUTES_KEYPRESS - MILI_MIN_MINUTES_KEYPRESS) + MILI_MIN_MINUTES_KEYPRESS));
+
+//// NOTIFICACIONE SMS SI ADMIN
+
+if (AWAY) {
+  const SMS = setInterval(() => {
+    if (OP_IN_EXECUTION) {
+      console.log(
+        `Accion en proceso, no se leyó chat: ${new Date().toLocaleTimeString()}`
+      );
+      return;
+    } else {
+      robot.moveMouseSmooth(CHAT_WIDTH, CHAT_HEIGHT);
+      robot.mouseClick("right");
+      robot.moveMouseSmooth(SAVE_CHAT_WIDTH, SAVE_CHAT_HEIGHT);
+      robot.mouseClick();
+      console.log(`.txt guardado ${new Date().toLocaleTimeString()}`);
+    }
+
+    readFile(DEFAULT_PATH, STRINGS, SMS);
+  }, 60000);
+}
+
+////// LEER ARCHIVO TXT
+const readFile = (path, strings, SMS) => {
+  fs.readFile(path, "utf8", function (err, data) {
+    if (err) throw err;
+    if (data) {
+      for (let str of strings) {
+        if (data.includes(str)) {
+          console.log(
+            `ALERTA ! SE MANDA SMS ${new Date().toLocaleTimeString()}`
+          );
+          //MANDAR SMS
+          sendSMS(TEXT, YOUR_TWILIO_PHONE, YOUR_CELPHONE);
+          //PARAR TODOS LOS INTERVALOS
+          clearInterval(LOG);
+          clearInterval(EATING);
+          clearInterval(KEYPRESS);
+          clearInterval(SMS);
+          // ESCRIBIR HOLA EN EL CHAT
+          sayHi();
+          console.log(`FIN DEL SCRIPT ${new Date().toLocaleTimeString()}`);
+          break;
+        }
+      }
+    }
+  });
+};
+
+/// MANDAR SMS
+
+const sendSMS = (text, twiliPhone, yourPhone) => {
+  client.messages
+    .create({
+      body: text,
+      from: twiliPhone,
+      to: yourPhone,
+    })
+    .then((message) => console.log(message.sid));
+};

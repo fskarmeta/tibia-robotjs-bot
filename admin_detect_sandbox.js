@@ -2,8 +2,9 @@ const fs = require("fs");
 var robot = require("robotjs");
 const SCREEN_SIZE = robot.getScreenSize();
 
-const admins = [
-  "GM Someone",
+const DEFAULT_PATH = "../Dura Client14/Default.txt";
+const STRINGS = [
+  "Bafian",
   "GM Someone",
   "GM Someone",
   "GM Someone",
@@ -13,20 +14,20 @@ const accountSid = "";
 const authToken = "";
 const client = require("twilio")(accountSid, authToken);
 
-const readFile = () => {
-  fs.readFile("../tibiaClient/Default.txt", "utf8", function (err, data) {
+const readFile = (path, strings) => {
+  let stringFound = false;
+  fs.readFile(path, "utf8", function (err, data) {
     if (err) throw err;
     if (data) {
-      // for (const admin of admins) {
-      if (data.includes("Bafian")) {
-        console.log("yes");
-        sendSMS();
-      } else {
-        console.log("no");
+      for (let str of strings) {
+        if (data.includes(str)) {
+          console.log(str);
+          stringFound = true;
+        }
       }
     }
-    //   }
   });
+  return stringFound;
 };
 
 const sendSMS = () => {
@@ -39,13 +40,15 @@ const sendSMS = () => {
     .then((message) => console.log(message.sid));
 };
 
-const CHAT_WIDTH = SCREEN_SIZE.width / 2 - 700;
-const CHAT_HEIGHT = SCREEN_SIZE.height / 2 + 210;
+console.log(readFile(DEFAULT_PATH, STRINGS));
 
-const SAVE_CHAT_WIDTH = SCREEN_SIZE.width / 2 - 690;
-const SAVE_CHAT_HEIGHT = SCREEN_SIZE.height / 2 + 220;
+// const CHAT_WIDTH = SCREEN_SIZE.width / 2 - 700;
+// const CHAT_HEIGHT = SCREEN_SIZE.height / 2 + 210;
 
-robot.moveMouse(CHAT_WIDTH, CHAT_HEIGHT);
-robot.mouseClick("right");
-robot.moveMouse(SAVE_CHAT_WIDTH, SAVE_CHAT_HEIGHT);
-robot.mouseClick();
+// const SAVE_CHAT_WIDTH = SCREEN_SIZE.width / 2 - 690;
+// const SAVE_CHAT_HEIGHT = SCREEN_SIZE.height / 2 + 220;
+
+// robot.moveMouseSmooth(CHAT_WIDTH, CHAT_HEIGHT);
+// robot.mouseClick("right");
+// robot.moveMouseSmooth(SAVE_CHAT_WIDTH, SAVE_CHAT_HEIGHT);
+// robot.mouseClick();

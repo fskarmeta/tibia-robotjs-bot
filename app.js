@@ -13,7 +13,7 @@ const GAME_OPEN = true;
 const AWAY = true;
 
 // NICKNAMES O FRASES QUE QUIERES QUE PAREN TU SCRIPT Y MANDEN MENSAJE
-const STRINGS = ["GM"];
+const STRINGS = ["GM", "AKITI"];
 
 // CONFIG TU CUENTA DE TWILIO
 const accountSid = "";
@@ -21,41 +21,44 @@ const authToken = "";
 const client = require("twilio")(accountSid, authToken); // NO CAMBIAR
 
 // PATH A TU ARCHIVO Default.txt en tu computador
-const DEFAULT_PATH = "../Dura Client14/Default.txt";
+const DEFAULT_PATH = "";
 
 // INFO SMS
 const TEXT = "ADMIN PRESENTE TIBIA!!";
-const YOUR_TWILIO_PHONE = "+12059286871";
-const YOUR_CELPHONE = "+56999199479";
+const YOUR_TWILIO_PHONE = "";
+const YOUR_CELPHONE = "";
+
+// FRASE QUE NO PARARIA EL SCRIPT Y MANDARIA SMS SI APARECE DESPUES DE "GM"
+const SAFE_MESSAGE = "";
 
 ///////////////////////////////////  TIEMPOS //////////////////////////////////////////
 
 // PARA GAME_OPEN = False
 // TIEMPO CERRAR VENTANA DESPUES DE OPERACIÓN
-const CLOSE_WINDOW_SECS = 5;
+const CLOSE_WINDOW_SECS = 7;
 
 // PARA GAME_OPEN = False
 // RANGO TIEMPO DE EJECUTAR OPERACIÓN UNA VEZ ABIERTA VENTANA (EN SEGUNDOS)
-const MIN_SECS_EXECUTE_OP = 1;
 const MAX_SECS_EXECUTE_OP = 2.5;
+const MIN_SECS_EXECUTE_OP = 1;
 
 // SEGUNDOS ENTRE CLICKS AL COMER (EN SEGUNDOS)
-const MAX_SECS_BETWEEN_CLICK = 0.25;
-const MIN_SECS_BETWEEN_CLICK = 0.6;
+const MAX_SECS_BETWEEN_CLICK = 0.9;
+const MIN_SECS_BETWEEN_CLICK = 0.5;
 
 // RANGO MINUTOS APRETAR KEY
 //TECLA A APRETAR
-const KEY = "f11";
-const MAX_MINS_KEYPRESS = 7; // RECOMEDADO 8
-const MIN_MINS_KEYPRESS = 5.8; // RECOMEDADO 6
+const KEY = "f9";
+const MAX_MINS_KEYPRESS = 11.5; // RECOMEDADO 8
+const MIN_MINS_KEYPRESS = 9.8; // RECOMEDADO 6
 
 // RANGO DE MINUTOS PARA COMER
-const MAX_MINS_FOOD = 14; // RECOMEDADO 14
-const MIN_MINS_FOOD = 9; // RECOMENDADO 9
+const MAX_MINS_FOOD = 17; // RECOMEDADO 14
+const MIN_MINS_FOOD = 10; // RECOMENDADO 9
 
 // RANGO DE CLICKS PARA COMER (CANTIDADES DE CLICKS)
-const MAX_AMOUNT_CLICKS = 5; // RECOMENDADO 5
-const MIN_AMOUNT_CLICKS = 9; // RECOMENDADO 9
+const MAX_AMOUNT_CLICKS = 11; // RECOMENDADO 9
+const MIN_AMOUNT_CLICKS = 6; // RECOMENDADO 5
 
 //////////////////////////////////////// POSICIONES PANTALLA //////////////////////////////////////////////////
 
@@ -208,6 +211,7 @@ const sayHi = () => {
 
 //FLAG
 let OP_IN_EXECUTION = false;
+let READ_IN_EXECUTION = false;
 
 ///// LOG
 console.log(
@@ -227,16 +231,23 @@ const LOG = setInterval(() => {
 const EATING = setInterval(() => {
   OP_IN_EXECUTION = true;
   openWindow();
+  let extraTime = 0;
+  if (READ_IN_EXECUTION) {
+    console.log("Lectura de Chat en ejecución");
+    extraTime = 1000;
+  }
   setTimeout(() => {
-    randomClicks(
-      MAX_AMOUNT_CLICKS,
-      MIN_AMOUNT_CLICKS,
-      MILI_MAX_SECS_BETWEEN_CLICK,
-      MILI_MIN_SECS_BETWEEN_CLICK
-    );
-  }, Math.floor(Math.random() * (MILI_MAX_SECS_EXECUTE_OP - MILI_MIN_SECS_EXECUTE_OP) + MILI_MIN_SECS_EXECUTE_OP));
-  closeWindow(MILI_CLOSE_WINDOW_SECS);
-  OP_IN_EXECUTION = false;
+    setTimeout(() => {
+      randomClicks(
+        MAX_AMOUNT_CLICKS,
+        MIN_AMOUNT_CLICKS,
+        MILI_MAX_SECS_BETWEEN_CLICK,
+        MILI_MIN_SECS_BETWEEN_CLICK
+      );
+      OP_IN_EXECUTION = false;
+    }, Math.floor(Math.random() * (MILI_MAX_SECS_EXECUTE_OP - MILI_MIN_SECS_EXECUTE_OP) + MILI_MIN_SECS_EXECUTE_OP));
+    closeWindow(MILI_CLOSE_WINDOW_SECS);
+  }, extraTime);
 }, Math.floor(Math.random() * (MILI_MAX_MINS_FOOD - MILI_MIN_MINS_FOOD + 10000) + MILI_MIN_MINS_FOOD));
 
 //// APRETAR TECLA
@@ -245,9 +256,9 @@ const KEYPRESS = setInterval(() => {
   openWindow();
   setTimeout(() => {
     pressKey(KEY);
+    OP_IN_EXECUTION = false;
   }, Math.floor(Math.random() * (MILI_MAX_SECS_EXECUTE_OP - MILI_MIN_SECS_EXECUTE_OP + 1000) + MILI_MIN_SECS_EXECUTE_OP));
   closeWindow(MILI_CLOSE_WINDOW_SECS);
-  OP_IN_EXECUTION = false;
 }, Math.floor(Math.random() * (MILI_MAX_MINUTES_KEYPRESS - MILI_MIN_MINUTES_KEYPRESS) + MILI_MIN_MINUTES_KEYPRESS));
 
 //// NOTIFICACIONE SMS SI ADMIN
@@ -260,6 +271,7 @@ if (AWAY) {
       );
       return;
     } else {
+      READ_IN_EXECUTION = true;
       robot.moveMouseSmooth(CHAT_WIDTH, CHAT_HEIGHT);
       robot.mouseClick("right");
       robot.moveMouseSmooth(SAVE_CHAT_WIDTH, SAVE_CHAT_HEIGHT);
@@ -268,6 +280,7 @@ if (AWAY) {
     }
 
     readFile(DEFAULT_PATH, STRINGS, SMS);
+    READ_IN_EXECUTION = false;
   }, 60000);
 }
 
@@ -278,6 +291,18 @@ const readFile = (path, strings, SMS) => {
     if (data) {
       for (let str of strings) {
         if (data.includes(str)) {
+          let message = data.slice(
+            data.indexOf("GM"),
+            data.indexOf("GM") + 225
+          );
+          if (message.includes(SAFE_MESSAGE)) {
+            console.log(message);
+            console.log(
+              `${new Date().toLocaleTimeString()} Mensaje normal del admin, continua script. `
+            );
+            return;
+          }
+
           console.log(
             `ALERTA ! SE MANDA SMS ${new Date().toLocaleTimeString()}`
           );
